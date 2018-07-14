@@ -10,4 +10,6 @@ import imageloader.task.com.model.DetailModel;
 
 public interface DetailsViews extends BaseView {
     void showData(List<DetailModel> mData);
+
+    void showMoreData(List<DetailModel> detailModels);
 }

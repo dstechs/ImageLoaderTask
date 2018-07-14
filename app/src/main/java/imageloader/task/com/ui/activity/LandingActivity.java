@@ -1,6 +1,7 @@
 package imageloader.task.com.ui.activity;
 
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DefaultItemAnimator;
@@ -12,19 +13,22 @@ import android.widget.LinearLayout;
 import java.util.List;
 
 import imageloader.task.com.R;
+import imageloader.task.com.common.ScrollMoreListner;
 import imageloader.task.com.model.DetailModel;
 import imageloader.task.com.ui.adapter.DetailsAdapter;
 import imageloader.task.com.ui.presentor.DetailPresentor;
 import imageloader.task.com.ui.view.DetailsViews;
 import imageloader.task.com.utils.CommonUtils;
 
-public class LandingActivity extends AppCompatActivity implements DetailsViews {
+public class LandingActivity extends AppCompatActivity implements DetailsViews, ScrollMoreListner.OnLoadMoreListener {
 
     private RecyclerView rvDetails;
     private SwipeRefreshLayout srlRefresh;
     private DetailPresentor mPresentor;
     private DetailsAdapter rvAdapter;
     private LinearLayout llNoDataLayout;
+    private ScrollMoreListner mScrollingListner;
+    private boolean isLoadMoreEnable;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,6 +56,16 @@ public class LandingActivity extends AppCompatActivity implements DetailsViews {
     private void initializeRecycler() {
         rvDetails.setLayoutManager(new LinearLayoutManager(this));
         rvDetails.setItemAnimator(new DefaultItemAnimator());
+        rvDetails.addOnScrollListener(getScrollingListner());
+    }
+
+    private RecyclerView.OnScrollListener getScrollingListner() {
+        if (mScrollingListner == null) {
+            mScrollingListner = new ScrollMoreListner();
+            mScrollingListner.setOnLoadMoreListener(this);
+            mScrollingListner.setThreshold(10);
+        }
+        return mScrollingListner;
     }
 
     private void initializeSwipeListner() {
@@ -77,7 +91,15 @@ public class LandingActivity extends AppCompatActivity implements DetailsViews {
 
     @Override
     public void hideProgress() {
+        resetLoadMore();
         srlRefresh.setRefreshing(false);
+    }
+
+    private void resetLoadMore() {
+        if (mScrollingListner.isLoading()) {
+            mScrollingListner.setLoading(false);
+            rvAdapter.hideLoadProgress();
+        }
     }
 
     @Override
@@ -103,8 +125,31 @@ public class LandingActivity extends AppCompatActivity implements DetailsViews {
         }
         if (rvAdapter != null)
             rvAdapter.updateData(mData);
-
-
     }
 
+    @Override
+    public void showMoreData(List<DetailModel> detailModels) {
+        rvAdapter.updateMoreData(detailModels);
+        if (rvAdapter.getItemCount() == 0) {
+            CommonUtils.initNoDataLayout(llNoDataLayout, getString(R.string.error_nodata), 0);
+            rvDetails.setVisibility(View.GONE);
+            llNoDataLayout.setVisibility(View.VISIBLE);
+        }
+    }
+
+    @Override
+    public void onLoadMore() {
+        if (srlRefresh.isRefreshing()) {
+            mScrollingListner.setLoading(false);
+            return;
+        }
+        rvAdapter.showLoadProgress();
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                mPresentor.requestMoreData();
+            }
+        }, 2000);
+
+    }
 }

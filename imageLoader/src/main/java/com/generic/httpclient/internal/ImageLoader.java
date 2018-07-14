@@ -10,6 +10,7 @@ import android.widget.ImageView;
 import com.generic.httpclient.HttpRequestClient;
 import com.generic.httpclient.cache.LruBitmapCache;
 import com.generic.httpclient.common.ILRequest;
+import com.generic.httpclient.core.Core;
 import com.generic.httpclient.error.ILError;
 import com.generic.httpclient.interfaces.BitmapRequestListener;
 
@@ -74,12 +75,17 @@ public class ImageLoader {
                                                  final int errorImageResId) {
         return new ImageListener() {
             @Override
-            public void onResponse(ImageContainer response, boolean isImmediate) {
-                if (response.getBitmap() != null) {
-                    view.setImageBitmap(response.getBitmap());
-                } else if (defaultImageResId != 0) {
-                    view.setImageResource(defaultImageResId);
-                }
+            public void onResponse(final ImageContainer response, boolean isImmediate) {
+                Core.getInstance().getExecutorSupplier().forMainThreadTasks().execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (response.getBitmap() != null) {
+                            view.setImageBitmap(response.getBitmap());
+                        } else if (defaultImageResId != 0) {
+                            view.setImageResource(defaultImageResId);
+                        }
+                    }
+                });
             }
 
             @Override

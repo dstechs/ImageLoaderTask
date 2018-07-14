@@ -64,4 +64,29 @@ public class DetailPresentor {
         uiView = null;
     }
 
+    public void requestMoreData() {
+        if (!NetworkUtil.isAvailable(mContext)) {
+            uiView.hideProgress();
+            uiView.internetError();
+            return;
+        }
+        HttpRequestClient.get(Constant.DETAILS_URL).setTag(DetailPresentor.class).build().getAsString(new StringRequestListener() {
+            @Override
+            public void onResponse(String response) {
+                if (uiView == null)
+                    return;
+                uiView.hideProgress();
+                if (null != response && !response.isEmpty() && response.trim().startsWith("[")) {
+                    uiView.showMoreData(mParser.<DetailModel>parseCollection(response, DetailModel.class));
+                }
+            }
+
+            @Override
+            public void onError(ILError anError) {
+                if (uiView == null)
+                    return;
+                uiView.hideProgress();
+            }
+        });
+    }
 }

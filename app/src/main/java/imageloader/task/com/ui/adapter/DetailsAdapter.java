@@ -9,6 +9,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.LinearInterpolator;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.generic.httpclient.widget.ILImageView;
@@ -23,11 +24,12 @@ import imageloader.task.com.model.DetailModel;
  * Created by dineshsingh on 7/13/18
  */
 
-public class DetailsAdapter extends RecyclerView.Adapter<DetailsAdapter.DetailHolder> {
+public class DetailsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     private Context mContext;
     private List<DetailModel> mData = new ArrayList<>(0);
     private int animPosition = -1;
+    private int VIEW_PROGRESS = 0, VIEW_ITEM = 1;
 
     public DetailsAdapter(Context mContext) {
         this.mContext = mContext;
@@ -40,21 +42,31 @@ public class DetailsAdapter extends RecyclerView.Adapter<DetailsAdapter.DetailHo
 
     @NonNull
     @Override
-    public DetailHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        return new DetailHolder(LayoutInflater.from(mContext).inflate(R.layout.item_details, parent, false));
+    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        if (viewType == VIEW_ITEM)
+            return new DetailHolder(LayoutInflater.from(mContext).inflate(R.layout.item_details, parent, false));
+        else
+            return new ProgressHolder(LayoutInflater.from(mContext).inflate(R.layout.item_progress, parent, false));
     }
 
     @Override
-    public void onBindViewHolder(@NonNull DetailHolder holder, int position) {
-        DetailModel mDetailsModel = mData.get(position);
-        holder.tvUserId.setText(mDetailsModel.getUser().getUsername());
-        holder.tvUserName.setText(mDetailsModel.getUser().getName());
-        loadImage(mDetailsModel.getUser().getProfileImage().getLarge(), holder.ivProfileImage);
-        enterAnimation(holder);
-        if (animPosition < position) {
-            enterAnimation(holder);
-            animPosition = position;
+    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+        if (holder instanceof DetailHolder) {
+            DetailModel mDetailsModel = mData.get(position);
+            DetailHolder mDetailHolder = (DetailHolder) holder;
+            mDetailHolder.tvUserId.setText(mDetailsModel.getUser().getUsername());
+            mDetailHolder.tvUserName.setText(mDetailsModel.getUser().getName());
+            loadImage(mDetailsModel.getUser().getProfileImage().getLarge(), mDetailHolder.ivProfileImage);
+            if (animPosition < position) {
+                enterAnimation(mDetailHolder);
+                animPosition = position;
+            }
         }
+    }
+
+    @Override
+    public int getItemViewType(int position) {
+        return mData.get(position) != null ? VIEW_ITEM : VIEW_PROGRESS;
     }
 
     private void loadImage(String url, ILImageView ivView) {
@@ -62,7 +74,6 @@ public class DetailsAdapter extends RecyclerView.Adapter<DetailsAdapter.DetailHo
         ivView.setDefaultImageResId(R.drawable.ic_image_holder);
         ivView.setErrorImageResId(R.drawable.ic_image_error);
         ivView.setImageUrl(url);
-//        ImageLoader.getInstance().get(url, getImageListener(ivView, R.drawable.ic_image_holder, R.drawable.ic_image_error));
     }
 
     @Override
@@ -77,6 +88,21 @@ public class DetailsAdapter extends RecyclerView.Adapter<DetailsAdapter.DetailHo
         animator.start();
     }
 
+    public void hideLoadProgress() {
+        mData.remove(mData.size() - 1);
+        notifyItemRemoved(mData.size() - 1);
+    }
+
+    public void showLoadProgress() {
+        mData.add(null);
+        notifyItemInserted(mData.size() - 1);
+    }
+
+    public void updateMoreData(List<DetailModel> detailModels) {
+        mData.addAll(detailModels);
+        notifyItemInserted(mData.size());
+    }
+
     class DetailHolder extends RecyclerView.ViewHolder {
         private ILImageView ivProfileImage;
         private TextView tvUserName;
@@ -88,6 +114,14 @@ public class DetailsAdapter extends RecyclerView.Adapter<DetailsAdapter.DetailHo
             tvUserName = itemView.findViewById(R.id.tvUserName);
             tvUserId = itemView.findViewById(R.id.tvUserId);
         }
+    }
 
+    class ProgressHolder extends RecyclerView.ViewHolder {
+        public ProgressBar progressBar;
+
+        public ProgressHolder(View v) {
+            super(v);
+            progressBar = v.findViewById(R.id.pbProgress);
+        }
     }
 }
