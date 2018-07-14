@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">ImageLoaderProject</string>
+    <string name="label_name">Dinesh Singh</string>
+    <string name="label_userid">\@devblast17</string>
+    <string name="error_no_internet">No Internet Connectivity</string>
+    <string name="error_nodata">No Data Found</string>
+</resources>
